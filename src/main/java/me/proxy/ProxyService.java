@@ -77,7 +77,7 @@ public class ProxyService {
     }
 
     private static final int TIMEOUT = 5000;
-    public static void proxy(Socket socket, String host, int port) throws IOException {
+    public static void proxy(Socket socket, String host, int port, boolean tryDirectConnection) throws IOException {
         boolean requireResponse = port == 80; // http connection should have response // handle gfw reset
         Piper piper = new Piper(new SocketTransport(socket));
 

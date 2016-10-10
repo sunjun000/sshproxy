@@ -26,24 +26,12 @@ public class Socks5Service implements Server.Service {
     public static final byte ATYP_DOMAIN = 0x03;
     public static final byte ATYP_IPV6 = 0x04;
 
-    public static final Server.ServiceFactory factory = new Server.ServiceFactory() {
-        public Server.Service create(Socket socket) {
-            return new Socks5Service(socket);
-        }
-    };
-
-    private Socket socket;
-    public Socks5Service(Socket socket) {
-        this.socket = socket;
-        try {
-            socket.setTcpNoDelay(true);
-            socket.setSoTimeout(15 * 1000);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
+    private boolean forceProxy;
+    public Socks5Service(boolean forceProxy) {
+        this.forceProxy = forceProxy;
     }
 
-    private void handleService() throws IOException {
+    private void handleService(Socket socket) throws IOException {
         DataInputStream in = new DataInputStream(socket.getInputStream());
         byte version = in.readByte();
         if (version != 0x05) {
@@ -98,13 +86,13 @@ public class Socks5Service implements Server.Service {
         MDC.put("request", atomicIndex.getAndIncrement() + "-" + host + ":" + port);
         logger.debug("Process socks5 connect request to {} {}", host, port);
         try {
-            ProxyService.proxy(socket, host, port);
+            ProxyService.proxy(socket, host, port, !forceProxy);
         } finally {
             MDC.remove("request");
         }
     }
 
-    private void handshake() throws IOException {
+    private void handshake(Socket socket) throws IOException {
         DataInputStream in = new DataInputStream(socket.getInputStream());
         byte version = in.readByte();
         if (version != 0x05) {
@@ -126,8 +114,16 @@ public class Socks5Service implements Server.Service {
         throw new RuntimeException("method NO AUTHENTICATION REQUIRED is not found");
     }
 
-    public void run() throws IOException {
-        handshake();
-        handleService();
+    @Override
+    public void serve(Socket socket) throws Exception {
+        try {
+            socket.setTcpNoDelay(true);
+            socket.setSoTimeout(15 * 1000);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
+        handshake(socket);
+        handleService(socket);
     }
 }

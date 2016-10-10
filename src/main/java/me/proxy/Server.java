@@ -15,29 +15,24 @@ public class Server {
     static Logger logger = LoggerFactory.getLogger(Server.class);
 
     public interface Service {
-        void run() throws Exception;
+        void serve(Socket socket) throws Exception;
     }
-
-    public interface ServiceFactory {
-        Service create(Socket socket);
-    }
-
 
     private ExecutorService executor;
-    private ServiceFactory serviceFactory;
+    private Service service;
     private ServerSocket serverSocket;
     private Thread thread;
     private boolean running = false;
     private Lock lock = new ReentrantLock();
-    public Server(ServerSocket serverSocket, ServiceFactory serviceFactory) {
+    public Server(ServerSocket serverSocket, Service service) {
         this.serverSocket = serverSocket;
-        this.serviceFactory = serviceFactory;
+        this.service = service;
     }
 
-    public Server(int port, ServiceFactory serviceFactory) throws IOException {
+    public Server(int port, Service service) throws IOException {
         this.serverSocket = new ServerSocket(port);
         this.serverSocket.setReuseAddress(true);
-        this.serviceFactory = serviceFactory;
+        this.service = service;
     }
 
     public void start() {
@@ -50,7 +45,7 @@ public class Server {
         } finally {
             lock.unlock();
         }
-        executor = new ThreadPoolExecutor(50, 400, 0L, TimeUnit.MILLISECONDS,
+        executor = new ThreadPoolExecutor(20, 200, 0L, TimeUnit.MILLISECONDS,
                                             new LinkedBlockingQueue<Runnable>(),
                                             new DaemonThreadFactory("server"));
         thread = new Thread(new Runnable() {
@@ -61,8 +56,7 @@ public class Server {
                         executor.submit(new Runnable() {
                             public void run() {
                                 try {
-                                    Service service = serviceFactory.create(socket);
-                                    service.run();
+                                    service.serve(socket);
                                 } catch (Exception e) {
                                     logger.error("work thread error", e);
                                 } finally {

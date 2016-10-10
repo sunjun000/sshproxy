@@ -33,8 +33,11 @@ public class Application {
     @Parameter(names = "-debug", description = "debugging log")
     private boolean debug = false;
 
-    @Parameter(names="-p", description="local port to bind")
+    @Parameter(names="-p", description="port for smart proxy")
     private int port=19999;
+
+    @Parameter(names="-p2", description="port for proxy")
+    private int port2=0;
 
     TransportProvider createProxy(String proxy) {
         try {
@@ -58,7 +61,12 @@ public class Application {
             }
         }
         logger.info("Bind at: {}", port);
-        new Server(port, Socks5Service.factory).start();
+        new Server(port, new Socks5Service(false)).start();
+        if (port2 == 0) {
+            port2 = port + 1;
+        }
+        logger.info("Bind at: {}", port2);
+        new Server(port2, new Socks5Service(true)).start();
     }
 
     void configLogger() {
