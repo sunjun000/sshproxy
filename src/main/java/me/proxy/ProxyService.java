@@ -11,7 +11,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ProxyService {
@@ -101,7 +103,7 @@ public class ProxyService {
             preferredProviders.remove(host);
         }
 
-        {
+        if (tryDirectConnection) {
             try {
                 logger.debug("try direct connection to {}:{}", host, port);
                 TransportProvider.Transport proxyTransport = directTransportProvider.connect(host, port, TIMEOUT);

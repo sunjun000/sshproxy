@@ -61,12 +61,12 @@ public class Application {
             }
         }
         logger.info("Bind at: {}", port);
-        new Server(port, new Socks5Service(false)).start();
+        new Server(port, new Socks5Service(false), 50, 400).start();
         if (port2 == 0) {
             port2 = port + 1;
         }
         logger.info("Bind at: {}", port2);
-        new Server(port2, new Socks5Service(true)).start();
+        new Server(port2, new Socks5Service(true), 20, 100).start();
     }
 
     void configLogger() {
